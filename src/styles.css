@@ -45,3 +45,6 @@ footer { color: #4b6355; text-align: center; padding: 16px 0 24px; font-size: 12
 .bozo-button.bp6-button { min-height: 44px; min-width: 106px; font-weight: 800; }
 .bozo-button[aria-pressed="true"] { outline: 2px solid #7e1119; outline-offset: 2px; }
 .history-bozo { color: #a61b29; font-weight: 800; white-space: nowrap; }
+.mode-toggle.bp6-button { margin-left: auto; flex-shrink: 0; min-height: 36px; }
+.brand-icon { flex-shrink: 0; }
+.test-banner { margin-bottom: 12px; }
