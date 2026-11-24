@@ -17,24 +17,17 @@ async function request(path, { method = 'GET', body, prefer = 'return=minimal' }
 }
 
 export async function loadWeeks() {
-  const rows = await request('tracker_weeks?select=week_start,assigned_member_id,tracker_picks(member_id,pick_text),tracker_bozos(member_id)&order=week_start.desc');
+  const rows = await request('tracker_weeks?select=week_start,assigned_member_id,finalized_at,tracker_picks(member_id,pick_text),tracker_bozos(member_id)&order=week_start.desc');
   return Object.fromEntries(rows.map((row) => [row.week_start, {
     assigned: row.assigned_member_id,
+    finalized: Boolean(row.finalized_at),
     picks: Object.fromEntries(row.tracker_picks.map((pick) => [pick.member_id, pick.pick_text])),
     bozos: row.tracker_bozos.map((bozo) => bozo.member_id),
   }]));
 }
 
-export function ensureWeek(week, assigned) {
-  // Saturday at noon in Eastern time, including the correct daylight saving offset.
-  const saturday = new Date(Date.parse(week) + 5 * 86400000);
-  const offset = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York', timeZoneName: 'longOffset',
-  }).formatToParts(saturday).find((part) => part.type === 'timeZoneName').value.slice(3);
-  return request('tracker_weeks?on_conflict=week_start', {
-    method: 'POST', prefer: 'resolution=ignore-duplicates',
-    body: { week_start: week, assigned_member_id: assigned, pick_deadline: saturday.toISOString().slice(0, 10) + 'T12:00:00' + offset },
-  });
+export function finalizeWeek(week) {
+  return request('rpc/tracker_finalize_week', { method: 'POST', body: { target_week: week } });
 }
 
 export async function savePick(week, member, text) {

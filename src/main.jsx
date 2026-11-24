@@ -4,24 +4,10 @@ import { Button, Callout, Card, Icon, ProgressBar, Tab, Tabs, TextArea } from '@
 import 'modern-normalize/modern-normalize.css';
 import '@blueprintjs/core/lib/css/blueprint.css';
 import './styles.css';
-import { changeTurn, ensureWeek, loadWeeks, savePick, setBozo } from './tracker-api.js';
+import { changeTurn, finalizeWeek, loadWeeks, savePick, setBozo } from './tracker-api.js';
 
 const roster = ['Jack', 'Danny', 'Carl', 'Chase', 'Kyle'];
 const day = 86400000;
-const zone = 'America/New_York';
-
-// Use Eastern calendar dates for the weekly rotation across daylight saving changes.
-function monday(value) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: zone, year: 'numeric', month: 'numeric', day: 'numeric',
-  }).formatToParts(value);
-  const part = (type) => Number(parts.find((item) => item.type === type).value);
-  const date = new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
-  return date.getTime() - ((date.getUTCDay() + 6) % 7) * day;
-}
-
-const week = monday(new Date());
-const weekKey = new Date(week).toISOString().slice(0, 10);
 const dateFormat = new Intl.DateTimeFormat('en-US', {
   month: 'short', day: 'numeric', timeZone: 'UTC',
 });
@@ -55,7 +41,7 @@ function PickRow({ name, pick, marked, disabled, save, toggleBozo }) {
           <span className="avatar" aria-hidden="true">{name[0]}</span>
           <label htmlFor={`pick-${name}`}>{name}</label>
         </div>
-        <BozoButton name={name} marked={marked} disabled={disabled} onClick={toggleBozo} />
+        {toggleBozo && <BozoButton name={name} marked={marked} disabled={disabled} onClick={toggleBozo} />}
       </div>
       <div className="pick-input">
         <TextArea id={`pick-${name}`} fill rows={1} maxLength={2000}
@@ -70,9 +56,8 @@ function PickRow({ name, pick, marked, disabled, save, toggleBozo }) {
   );
 }
 
-function History({ weeks, busy, toggleBozo }) {
-  const entries = Object.entries(weeks).filter(([key, entry]) =>
-    key < weekKey && (Object.keys(entry.picks).length || entry.bozos.length));
+function History({ weeks }) {
+  const entries = Object.entries(weeks).filter(([, entry]) => entry.finalized);
   if (!entries.length) return <Card className="empty">Past weekends will appear here.</Card>;
   return entries.map(([key, entry]) => (
     <Card key={key} className="history-card">
@@ -82,17 +67,12 @@ function History({ weeks, busy, toggleBozo }) {
         const member = index + 1;
         const marked = entry.bozos.includes(member);
         return <li key={name}><strong>{name}</strong><span>{entry.picks[member] ?? 'No pick'}</span>
-          <BozoButton name={name} marked={marked} disabled={busy}
-            onClick={() => toggleBozo(key, member, !marked)} />
+          {marked && <span className="history-bozo">🤡 BOZO</span>}
         </li>;
       })}</ul>
     </Card>
   ));
 }
-
-const firstWeek = '2026-11-23';
-const rotationIndex = Math.round((week - Date.parse(firstWeek)) / (7 * day));
-const assigned = ((rotationIndex % roster.length) + roster.length) % roster.length + 1;
 
 function App() {
   const [weeks, setWeeks] = useState(null);
@@ -103,8 +83,9 @@ function App() {
   const [busy, setBusy] = useState(false);
   const writing = useRef(false);
   const latestRead = useRef(0);
-  const entry = weeks?.[weekKey] ?? { assigned, picks: {}, bozos: [] };
-  const count = Object.keys(entry.picks).length;
+  const [weekKey, entry] = Object.entries(weeks ?? {}).find(([, item]) => !item.finalized) ?? [];
+  const count = Object.keys(entry?.picks ?? {}).length;
+  const allPicksIn = count === roster.length;
 
   async function refresh() {
     const read = ++latestRead.current;
@@ -139,11 +120,12 @@ function App() {
     latestRead.current++;
     setBusy(true);
     try {
-      if (key === weekKey && !weeks?.[key]) await ensureWeek(key, assigned);
       await action();
-      setWeeks((current) => ({
-        ...current, [key]: apply(current?.[key] ?? { assigned, picks: {}, bozos: [] }),
-      }));
+      if (apply) {
+        setWeeks((current) => ({ ...current, [key]: apply(current[key]) }));
+      } else {
+        await refresh();
+      }
       setNotice(message);
       return true;
     } catch {
@@ -163,7 +145,7 @@ function App() {
     }), marked ? `${roster[member - 1]} is a BOZO.` : 'BOZO mark removed.');
   }
 
-  const current = (
+  const current = entry && (
     <>
       <section className="feature" aria-label="Weekly assignment">
         <div>
@@ -186,8 +168,8 @@ function App() {
         {weeks && roster.map((name, index) => {
           const member = index + 1;
           const marked = entry.bozos.includes(member);
-          return <PickRow key={name} name={name} pick={entry.picks[member] ?? ''}
-            marked={marked} disabled={busy} toggleBozo={() => toggleBozo(weekKey, member, !marked)}
+          return <PickRow key={weekKey + name} name={name} pick={entry.picks[member] ?? ''}
+            marked={marked} disabled={busy} toggleBozo={allPicksIn ? () => toggleBozo(weekKey, member, !marked) : undefined}
             save={(text) => update(weekKey, () => savePick(weekKey, member, text), (current) => {
               const picks = { ...current.picks };
               if (text) picks[member] = text;
@@ -196,6 +178,12 @@ function App() {
             }, `${name}’s pick ${text ? 'saved' : 'cleared'}.`)} />;
         })}
         <div className="actions">
+          {allPicksIn && entry.bozos.length > 0 && (
+            <Button large intent="primary" text="Finalize week" disabled={busy}
+              onClick={() => {
+                void update(weekKey, () => finalizeWeek(weekKey), null, 'Weekend finalized. The next weekend is open.');
+              }} />
+          )}
           <Button minimal icon="edit" text={manage ? 'Done editing' : 'Edit turn'}
             aria-pressed={manage} onClick={() => setManage(!manage)} />
         </div>
@@ -215,7 +203,7 @@ function App() {
         <Tabs id="tracker-navigation" selectedTabId={tab} onChange={setTab}>
           <Tab id="current" title="This week" panel={current} />
           <Tab id="history" title="History" panel={weeks &&
-            <History weeks={weeks} busy={busy} toggleBozo={toggleBozo} />} />
+            <History weeks={weeks} />} />
         </Tabs>
         <footer role="status">{notice}</footer>
       </main>
