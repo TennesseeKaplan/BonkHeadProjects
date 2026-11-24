@@ -76,7 +76,7 @@ function History({ weeks, busy, toggleBozo }) {
   if (!entries.length) return <Card className="empty">Past weekends will appear here.</Card>;
   return entries.map(([key, entry]) => (
     <Card key={key} className="history-card">
-      <h2>Wkend {weekendLabel(key)}, {new Date(Date.parse(key) + 6 * day).getUTCFullYear()}</h2>
+      <h2>Weekend {weekendLabel(key)}, {new Date(Date.parse(key) + 6 * day).getUTCFullYear()}</h2>
       <p>{roster[entry.assigned - 1]} was putting in the Lay</p>
       <ul>{roster.map((name, index) => {
         const member = index + 1;
@@ -167,7 +167,7 @@ function App() {
     <>
       <section className="feature" aria-label="Weekly assignment">
         <div>
-          <span className="feature-label"><Icon icon="calendar" /> Wkend {weekendLabel(weekKey)}</span>
+          <span className="feature-label"><Icon icon="calendar" /> Weekend {weekendLabel(weekKey)}</span>
           <h2>{roster[entry.assigned - 1]} is putting in the Lay</h2>
         </div>
         <div className="deadline"><Icon icon="time" /><div>Pick deadline<strong>Sat · Noon ET</strong></div></div>

@@ -16,7 +16,7 @@ main { padding-top: 22px; }
 .bp6-tab[aria-selected="true"] { color: #28533a; }
 .bp6-tab-indicator { background: #28533a; }
 .feature { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 18px; background: #233a32; border-radius: 18px; padding: clamp(18px, 4vw, 32px); color: white; }
-.feature-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; color: #d3e3cc; }
+.feature-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 750; letter-spacing: .07em; color: #d3e3cc; }
 .feature h2 { font-size: clamp(26px, 5.5vw, 37px); line-height: 1.1; margin: 10px 0 4px; letter-spacing: -.055em; color: var(--accent); }
 .deadline { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #ffffff15; border-radius: 10px; color: #dce7df; }
 .deadline strong { display: block; color: white; margin-top: 2px; }
