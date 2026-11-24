@@ -1,0 +1,28 @@
+{
+  "name": "bozo-lay-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TennesseeKaplan/BonkHeadProjects.git"
+  },
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/TennesseeKaplan/BonkHeadProjects/issues"
+  },
+  "homepage": "https://github.com/TennesseeKaplan/BonkHeadProjects#readme",
+  "dependencies": {
+    "@blueprintjs/core": "6.23.2",
+    "modern-normalize": "3.0.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.8"
+  }
+}
