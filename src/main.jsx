@@ -26,9 +26,9 @@ const weekKey = new Date(week).toISOString().slice(0, 10);
 const dateFormat = new Intl.DateTimeFormat('en-US', {
   month: 'short', day: 'numeric', timeZone: 'UTC',
 });
-const weekLabel = (start) => {
-  const date = new Date(start);
-  return dateFormat.formatRange(date, new Date(date.getTime() + 6 * day));
+const weekendLabel = (start) => {
+  const monday = Date.parse(start);
+  return dateFormat.formatRange(new Date(monday + 5 * day), new Date(monday + 6 * day));
 };
 
 function initialData() {
@@ -91,8 +91,8 @@ function History({ weeks, grade }) {
     const losses = roster.filter((name) => entry.picks[name]?.outcome === 'lost');
     return (
       <Card key={key} className="history-card">
-        <h2>{weekLabel(key)}, {key.slice(0, 4)}</h2>
-        <p>{entry.assigned} was on the slip</p>
+        <h2>Wkend {weekendLabel(key)}, {key.slice(0, 4)}</h2>
+        <p>{entry.assigned} was putting in the Lay</p>
         {losses.length > 0 && <Callout intent="danger">Broke the parlay: {losses.join(', ')}</Callout>}
         <ul>{roster.map((name) => {
           const pick = entry.picks[name];
@@ -134,9 +134,8 @@ function App() {
     <>
       <section className="feature" aria-label="Weekly assignment">
         <div>
-          <span className="feature-label"><Icon icon="calendar" /> WEEK OF {weekLabel(weekKey)}</span>
-          <h2>{entry.assigned}’s up</h2>
-          <p>On the slip this week</p>
+          <span className="feature-label"><Icon icon="calendar" /> Wkend {weekendLabel(weekKey)}</span>
+          <h2>{entry.assigned} is putting in the Lay</h2>
         </div>
         <div className="deadline"><Icon icon="time" /><div>Pick deadline<strong>Sat · Noon ET</strong></div></div>
       </section>
@@ -146,7 +145,7 @@ function App() {
           <span>{count} of {roster.length} in</span>
         </div>
         <ProgressBar value={count / roster.length} stripes={false} animate={false} aria-label="Pick submissions" />
-        {manage && <label className="grade assignment">On the slip
+        {manage && <label className="grade assignment">Putting in the Lay
           <select value={entry.assigned} onChange={(event) => update({ ...entry, assigned: event.target.value }, 'Turn updated.')}>
             {roster.map((name) => <option key={name}>{name}</option>)}
           </select>
